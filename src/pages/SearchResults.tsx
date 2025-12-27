@@ -1,0 +1,190 @@
+import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import Header from '@/components/Header';
+import SearchContextPanel from '@/components/SearchContextPanel';
+import CandidateCard from '@/components/CandidateCard';
+import CandidateProfile from '@/components/CandidateProfile';
+import { mockCandidates, extractKeywordsFromPrompt } from '@/data/mockCandidates';
+import { Candidate, ExtractedKeywords } from '@/types/candidate';
+import { Users, UserCheck, Search } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+const SearchResults = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const initialPrompt = (location.state as { prompt?: string })?.prompt || '';
+  
+  const [prompt, setPrompt] = useState(initialPrompt);
+  const [keywords, setKeywords] = useState<ExtractedKeywords>(() => extractKeywordsFromPrompt(initialPrompt));
+  const [candidates, setCandidates] = useState<Candidate[]>(mockCandidates);
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(mockCandidates[0] || null);
+  const [shortlisted, setShortlisted] = useState<string[]>([]);
+  const [rejected, setRejected] = useState<string[]>([]);
+  const [sentInvites, setSentInvites] = useState(12);
+  const [repliesReceived, setRepliesReceived] = useState(4);
+  const [activeTab, setActiveTab] = useState<'all' | 'shortlisted'>('all');
+
+  useEffect(() => {
+    if (!initialPrompt) {
+      navigate('/');
+    }
+  }, [initialPrompt, navigate]);
+
+  const handleEditPrompt = (newPrompt: string) => {
+    setPrompt(newPrompt);
+    setKeywords(extractKeywordsFromPrompt(newPrompt));
+  };
+
+  const handleUpdateKeywords = (newKeywords: ExtractedKeywords) => {
+    setKeywords(newKeywords);
+    // In a real app, this would trigger a new search
+  };
+
+  const handleShortlist = (candidateId: string) => {
+    if (shortlisted.includes(candidateId)) {
+      setShortlisted(shortlisted.filter(id => id !== candidateId));
+      toast({
+        title: "Removed from shortlist",
+        description: "Candidate moved back to results.",
+      });
+    } else {
+      setShortlisted([...shortlisted, candidateId]);
+      toast({
+        title: "Added to shortlist",
+        description: "Candidate has been shortlisted.",
+      });
+    }
+  };
+
+  const handleReject = (candidateId: string) => {
+    setRejected([...rejected, candidateId]);
+    if (selectedCandidate?.id === candidateId) {
+      const remaining = candidates.filter(c => c.id !== candidateId && !rejected.includes(c.id));
+      setSelectedCandidate(remaining[0] || null);
+    }
+    toast({
+      title: "Candidate rejected",
+      description: "Candidate has been hidden from results.",
+    });
+  };
+
+  const handleSendInvite = () => {
+    setSentInvites(prev => prev + 1);
+  };
+
+  const handleRevealContact = () => {
+    // In a real app, this would reveal contact info
+  };
+
+  const visibleCandidates = candidates.filter(c => !rejected.includes(c.id));
+  const displayedCandidates = activeTab === 'shortlisted' 
+    ? visibleCandidates.filter(c => shortlisted.includes(c.id))
+    : visibleCandidates;
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header sentInvites={sentInvites} repliesReceived={repliesReceived} />
+      
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Column - Search Context */}
+        <aside className="w-80 border-r border-border bg-card flex-shrink-0 hidden lg:block">
+          <SearchContextPanel
+            prompt={prompt}
+            keywords={keywords}
+            onEditPrompt={handleEditPrompt}
+            onUpdateKeywords={handleUpdateKeywords}
+          />
+        </aside>
+
+        {/* Middle Column - Candidate Listing */}
+        <main className="flex-1 flex flex-col min-w-0">
+          {/* Tabs */}
+          <div className="border-b border-border bg-card px-4 py-3">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setActiveTab('all')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'all' 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                All Results ({visibleCandidates.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('shortlisted')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'shortlisted' 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                <UserCheck className="w-4 h-4" />
+                Shortlisted ({shortlisted.length})
+              </button>
+            </div>
+          </div>
+
+          {/* Candidate List */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {displayedCandidates.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <Search className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  {activeTab === 'shortlisted' ? 'No shortlisted candidates' : 'No candidates found'}
+                </h3>
+                <p className="text-muted-foreground max-w-sm">
+                  {activeTab === 'shortlisted' 
+                    ? 'Start shortlisting candidates from the results to see them here.'
+                    : 'Try adjusting your search keywords or prompt to find more candidates.'}
+                </p>
+              </div>
+            ) : (
+              displayedCandidates.map((candidate) => (
+                <CandidateCard
+                  key={candidate.id}
+                  candidate={candidate}
+                  isSelected={selectedCandidate?.id === candidate.id}
+                  onSelect={() => setSelectedCandidate(candidate)}
+                  onShortlist={() => handleShortlist(candidate.id)}
+                  onReject={() => handleReject(candidate.id)}
+                  isShortlisted={shortlisted.includes(candidate.id)}
+                />
+              ))
+            )}
+          </div>
+        </main>
+
+        {/* Right Column - Candidate Profile */}
+        <aside className="w-96 border-l border-border bg-card flex-shrink-0 hidden xl:block">
+          {selectedCandidate ? (
+            <CandidateProfile
+              candidate={selectedCandidate}
+              onSendInvite={handleSendInvite}
+              onRevealContact={handleRevealContact}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-center p-6">
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                <Users className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                Select a candidate
+              </h3>
+              <p className="text-muted-foreground">
+                Click on a candidate to view their full profile and take action.
+              </p>
+            </div>
+          )}
+        </aside>
+      </div>
+    </div>
+  );
+};
+
+export default SearchResults;
