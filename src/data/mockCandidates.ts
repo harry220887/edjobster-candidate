@@ -174,12 +174,12 @@ export const extractKeywordsFromPrompt = (prompt: string): ExtractedKeywords => 
     keywords.education.push('M.Ed');
   }
 
-  // Extract skills
+  // Extract skills - use clean terms for API
   if (lowercasePrompt.includes('cbse')) {
-    keywords.skills.push('CBSE Curriculum');
+    keywords.skills.push('CBSE');
   }
   if (lowercasePrompt.includes('icse')) {
-    keywords.skills.push('ICSE Curriculum');
+    keywords.skills.push('ICSE');
   }
   if (lowercasePrompt.includes('secondary') || lowercasePrompt.includes('middle school')) {
     keywords.skills.push('Secondary Education');
@@ -194,18 +194,40 @@ export const extractKeywordsFromPrompt = (prompt: string): ExtractedKeywords => 
     keywords.experienceRange = expMatch[0];
   }
 
-  // Extract location
-  if (lowercasePrompt.includes('bangalore') || lowercasePrompt.includes('bengaluru')) {
-    keywords.location.push('Bangalore');
+  // Extract location - expanded Indian cities
+  const indianCities = [
+    'lucknow', 'bangalore', 'bengaluru', 'mumbai', 'delhi', 'new delhi',
+    'chennai', 'hyderabad', 'kolkata', 'pune', 'ahmedabad', 'jaipur',
+    'chandigarh', 'noida', 'gurugram', 'gurgaon', 'mysore', 'mysuru',
+    'kochi', 'thiruvananthapuram', 'indore', 'bhopal', 'nagpur', 'patna',
+    'varanasi', 'agra', 'surat', 'vadodara', 'coimbatore', 'visakhapatnam'
+  ];
+  
+  indianCities.forEach(city => {
+    if (lowercasePrompt.includes(city)) {
+      // Capitalize first letter
+      const capitalizedCity = city.charAt(0).toUpperCase() + city.slice(1);
+      // Handle special cases
+      if (city === 'bengaluru') {
+        keywords.location.push('Bangalore');
+      } else if (city === 'mysuru') {
+        keywords.location.push('Mysore');
+      } else if (city === 'new delhi') {
+        keywords.location.push('New Delhi');
+      } else {
+        keywords.location.push(capitalizedCity);
+      }
+    }
+  });
+  
+  // Also try to extract city from "in X, India" pattern
+  const locationMatch = prompt.match(/in\s+([A-Z][a-z]+),?\s*India/i);
+  if (locationMatch && !keywords.location.some(l => l.toLowerCase() === locationMatch[1].toLowerCase())) {
+    keywords.location.push(locationMatch[1]);
   }
+  
   if (lowercasePrompt.includes('india')) {
     keywords.location.push('India');
-  }
-  if (lowercasePrompt.includes('chennai')) {
-    keywords.location.push('Chennai');
-  }
-  if (lowercasePrompt.includes('mumbai')) {
-    keywords.location.push('Mumbai');
   }
 
   return keywords;
