@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import SearchContextPanel from '@/components/SearchContextPanel';
@@ -8,7 +8,7 @@ import { extractKeywordsFromPrompt } from '@/data/mockCandidates';
 import { Candidate, ExtractedKeywords } from '@/types/candidate';
 import { Users, UserCheck, Search, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { searchCandidates } from '@/lib/coresignal';
+import { searchCandidates, collectCandidate } from '@/lib/coresignal';
 
 const SearchResults = () => {
   const location = useLocation();
@@ -21,12 +21,50 @@ const SearchResults = () => {
   const [keywords, setKeywords] = useState<ExtractedKeywords>(() => extractKeywordsFromPrompt(initialPrompt));
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  const [fullProfile, setFullProfile] = useState<Candidate | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [profileCache, setProfileCache] = useState<Record<string, Candidate>>({});
   const [shortlisted, setShortlisted] = useState<string[]>([]);
   const [rejected, setRejected] = useState<string[]>([]);
   const [sentInvites, setSentInvites] = useState(12);
   const [repliesReceived, setRepliesReceived] = useState(4);
   const [activeTab, setActiveTab] = useState<'all' | 'shortlisted'>('all');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch full profile when candidate is selected
+  const fetchFullProfile = useCallback(async (candidate: Candidate) => {
+    // Check cache first
+    if (profileCache[candidate.id]) {
+      setFullProfile(profileCache[candidate.id]);
+      return;
+    }
+
+    setIsLoadingProfile(true);
+    setFullProfile(null);
+    
+    try {
+      const profile = await collectCandidate(candidate.id);
+      // Preserve fitScore and fitReason from preview
+      const mergedProfile = {
+        ...profile,
+        fitScore: candidate.fitScore,
+        fitReason: candidate.fitReason,
+      };
+      setFullProfile(mergedProfile);
+      setProfileCache(prev => ({ ...prev, [candidate.id]: mergedProfile }));
+    } catch (error) {
+      console.error('Failed to fetch full profile:', error);
+      // Fallback to preview data
+      setFullProfile(candidate);
+      toast({
+        title: "Couldn't load full profile",
+        description: "Showing preview data instead.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  }, [profileCache, toast]);
 
   // Fetch candidates when keywords change
   const fetchCandidates = async (searchKeywords: ExtractedKeywords) => {
@@ -38,6 +76,7 @@ const SearchResults = () => {
         setSelectedCandidate(result.candidates[0]);
       } else {
         setSelectedCandidate(null);
+        setFullProfile(null);
       }
     } catch (error) {
       console.error('Failed to fetch candidates:', error);
@@ -50,6 +89,13 @@ const SearchResults = () => {
       setIsLoading(false);
     }
   };
+
+  // Fetch full profile when selected candidate changes
+  useEffect(() => {
+    if (selectedCandidate) {
+      fetchFullProfile(selectedCandidate);
+    }
+  }, [selectedCandidate, fetchFullProfile]);
 
   useEffect(() => {
     if (!initialPrompt) {
@@ -202,7 +248,23 @@ const SearchResults = () => {
 
         {/* Right Column - Candidate Profile */}
         <aside className="w-96 border-l border-border bg-card flex-shrink-0 hidden xl:block">
-          {selectedCandidate ? (
+          {isLoadingProfile ? (
+            <div className="flex flex-col items-center justify-center h-full text-center p-6">
+              <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                Loading profile...
+              </h3>
+              <p className="text-muted-foreground">
+                Fetching complete candidate details.
+              </p>
+            </div>
+          ) : fullProfile ? (
+            <CandidateProfile
+              candidate={fullProfile}
+              onSendInvite={handleSendInvite}
+              onRevealContact={handleRevealContact}
+            />
+          ) : selectedCandidate ? (
             <CandidateProfile
               candidate={selectedCandidate}
               onSendInvite={handleSendInvite}

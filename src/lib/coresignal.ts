@@ -23,3 +23,20 @@ export async function searchCandidates(
     page: data.page || 1,
   };
 }
+
+export async function collectCandidate(employeeId: string): Promise<Candidate> {
+  const { data, error } = await supabase.functions.invoke('collect-candidate', {
+    body: { employeeId },
+  });
+
+  if (error) {
+    console.error('Error collecting candidate:', error);
+    throw new Error(error.message || 'Failed to collect candidate profile');
+  }
+
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  return data.candidate;
+}
