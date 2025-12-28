@@ -42,6 +42,7 @@ interface CoresignalFullProfile {
   summary?: string;
   // Correct field names from actual API
   education?: CoresignalEducation[];
+  education_degrees?: string[];  // Fallback field for education
   experience?: CoresignalExperience[];
   inferred_skills?: string[];
   certifications?: CoresignalCertification[];
@@ -63,6 +64,8 @@ function mapFullProfile(profile: CoresignalFullProfile) {
   // Log raw data for debugging
   console.log('Raw profile data:', {
     education_count: profile.education?.length ?? 0,
+    education_degrees_count: profile.education_degrees?.length ?? 0,
+    education_degrees: profile.education_degrees,
     experience_count: profile.experience?.length ?? 0,
     skills_count: profile.inferred_skills?.length ?? 0,
     certifications_count: profile.certifications?.length ?? 0,
@@ -70,14 +73,23 @@ function mapFullProfile(profile: CoresignalFullProfile) {
     has_phone: !!profile.phone,
   });
 
-  // Map education - use correct field names
-  const education = (profile.education || []).map(edu => ({
+  // Map education - use education array first, fallback to education_degrees
+  let education = (profile.education || []).map(edu => ({
     degree: edu.degree || 'Degree',
     institution: edu.institution_name || 'Institution',
     year: edu.date_to_year 
       ? `${edu.date_from_year || ''} - ${edu.date_to_year}` 
       : String(edu.date_from_year || ''),
   }));
+
+  // Fallback: If education array is empty but education_degrees exists
+  if (education.length === 0 && profile.education_degrees?.length) {
+    education = profile.education_degrees.map(degreeStr => ({
+      degree: degreeStr,
+      institution: 'Unknown',
+      year: '',
+    }));
+  }
 
   // Map work history - use position_title (not title)
   const workHistory = (profile.experience || []).map(exp => ({
