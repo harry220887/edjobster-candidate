@@ -35,55 +35,115 @@ interface CoresignalCandidate {
 }
 
 function buildCoresignalQuery(keywords: ExtractedKeywords) {
-  const conditions = [];
+  const mustConditions: unknown[] = [];
   
-  // Add job title queries
+  // Job title match using match query (e.g., "English Teacher")
   if (keywords.jobTitles.length > 0) {
-    conditions.push({
-      query_string: {
-        query: keywords.jobTitles.join(' OR '),
-        default_field: 'active_experience_title',
-        default_operator: 'or'
+    mustConditions.push({
+      match: {
+        active_experience_title: keywords.jobTitles.join(' ')
       }
     });
   }
   
-  // Add skills queries (search in headline)
-  if (keywords.skills.length > 0) {
-    conditions.push({
-      query_string: {
-        query: keywords.skills.join(' OR '),
-        default_field: 'headline',
-        default_operator: 'or'
-      }
-    });
-  }
-  
-  // Add location filter
-  if (keywords.location.length > 0) {
-    conditions.push({
-      query_string: {
-        query: keywords.location.join(' OR '),
-        default_field: 'location_full',
-        default_operator: 'or'
-      }
-    });
-  }
-
-  // Add education queries
+  // Education - NESTED query for degree (e.g., "B.Ed")
   if (keywords.education.length > 0) {
-    conditions.push({
-      query_string: {
-        query: keywords.education.join(' OR '),
-        default_field: 'headline',
-        default_operator: 'or'
+    mustConditions.push({
+      nested: {
+        path: "education",
+        query: {
+          match: {
+            "education.degree": keywords.education.join(' ')
+          }
+        }
       }
     });
   }
-
-  // If no specific conditions, search broadly
-  if (conditions.length === 0) {
-    conditions.push({
+  
+  // Experience years - RANGE query on total_experience_duration_months
+  if (keywords.experienceRange) {
+    const yearsMatch = keywords.experienceRange.match(/(\d+)/);
+    const years = yearsMatch ? parseInt(yearsMatch[1], 10) : 0;
+    if (years > 0) {
+      mustConditions.push({
+        range: {
+          total_experience_duration_months: {
+            gte: years * 12  // Convert years to months
+          }
+        }
+      });
+    }
+  }
+  
+  // Skills/Company context (CBSE, curriculum types) - NESTED query on experience.company_name
+  // Also add location filtering within experience if we have skills that suggest company context
+  if (keywords.skills.length > 0) {
+    const experienceNestedMust: unknown[] = [];
+    
+    // Search skills in company_name (e.g., "CBSE" in school names)
+    experienceNestedMust.push({
+      query_string: {
+        query: keywords.skills.join(' '),
+        default_field: "experience.company_name",
+        default_operator: "AND"
+      }
+    });
+    
+    // If we have location, also search within experience.location
+    if (keywords.location.length > 0) {
+      keywords.location.forEach(loc => {
+        experienceNestedMust.push({
+          match: {
+            "experience.location": loc
+          }
+        });
+      });
+    }
+    
+    mustConditions.push({
+      nested: {
+        path: "experience",
+        query: {
+          bool: {
+            must: experienceNestedMust
+          }
+        }
+      }
+    });
+  }
+  
+  // Location - search in main location fields
+  if (keywords.location.length > 0) {
+    // Match location_full for city/state
+    const cityLocation = keywords.location.find(l => 
+      !['India', 'USA', 'UK', 'Canada', 'Australia', 'Germany', 'France', 'China', 'Japan'].some(c => 
+        l.toLowerCase() === c.toLowerCase()
+      )
+    );
+    
+    if (cityLocation) {
+      mustConditions.push({
+        match: { location_full: cityLocation }
+      });
+    }
+    
+    // Match location_country for country
+    const country = keywords.location.find(l => 
+      ['India', 'USA', 'UK', 'Canada', 'Australia', 'Germany', 'France', 'China', 'Japan'].some(c => 
+        l.toLowerCase() === c.toLowerCase()
+      )
+    );
+    
+    if (country) {
+      mustConditions.push({
+        match: { location_country: country }
+      });
+    }
+  }
+  
+  // If no specific conditions, do a broad search
+  if (mustConditions.length === 0) {
+    mustConditions.push({
       query_string: {
         query: '*',
         default_field: 'headline',
@@ -95,7 +155,7 @@ function buildCoresignalQuery(keywords: ExtractedKeywords) {
   return {
     query: {
       bool: {
-        should: conditions
+        must: mustConditions  // AND logic - all conditions must match
       }
     }
   };
@@ -199,6 +259,8 @@ serve(async (req) => {
     const query = buildCoresignalQuery(keywords);
     console.log('Built Coresignal query:', JSON.stringify(query));
 
+    // Use the full search endpoint (returns IDs), then we can use preview for display
+    // For now, keeping preview endpoint but with proper query structure
     const response = await fetch(
       `https://api.coresignal.com/cdapi/v2/employee_multi_source/search/es_dsl/preview?page=${page}`,
       {
