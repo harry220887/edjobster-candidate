@@ -62,22 +62,30 @@ const CandidateProfile = ({ candidate, onSendInvite, onRevealContact }: Candidat
               <Eye className="w-4 h-4 mr-2" />
               Reveal Contact
             </Button>
-          ) : (
+          ) : (candidate.email || candidate.phone) ? (
             <div className="flex-1 space-y-1">
-              <a 
-                href={`mailto:${candidate.name.toLowerCase().replace(' ', '.')}@email.com`}
-                className="flex items-center gap-2 text-sm text-primary hover:underline"
-              >
-                <Mail className="w-4 h-4" />
-                {candidate.name.toLowerCase().replace(' ', '.')}@email.com
-              </a>
-              <a 
-                href="tel:+919876543210"
-                className="flex items-center gap-2 text-sm text-primary hover:underline"
-              >
-                <Phone className="w-4 h-4" />
-                +91 98765 43210
-              </a>
+              {candidate.email && (
+                <a 
+                  href={`mailto:${candidate.email}`}
+                  className="flex items-center gap-2 text-sm text-primary hover:underline"
+                >
+                  <Mail className="w-4 h-4" />
+                  {candidate.email}
+                </a>
+              )}
+              {candidate.phone && (
+                <a 
+                  href={`tel:${candidate.phone}`}
+                  className="flex items-center gap-2 text-sm text-primary hover:underline"
+                >
+                  <Phone className="w-4 h-4" />
+                  {candidate.phone}
+                </a>
+              )}
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-sm text-muted-foreground">No contact info available</p>
             </div>
           )}
         </div>
