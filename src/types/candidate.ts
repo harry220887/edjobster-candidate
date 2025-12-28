@@ -16,6 +16,9 @@ export interface Candidate {
   email?: string;
   phone?: string;
   contactRevealed: boolean;
+  professionalNetworkUrl?: string;
+  connectionsCount?: number;
+  companyIndustry?: string;
 }
 
 export interface Education {

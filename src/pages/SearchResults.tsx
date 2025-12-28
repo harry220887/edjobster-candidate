@@ -4,10 +4,11 @@ import Header from '@/components/Header';
 import SearchContextPanel from '@/components/SearchContextPanel';
 import CandidateCard from '@/components/CandidateCard';
 import CandidateProfile from '@/components/CandidateProfile';
-import { mockCandidates, extractKeywordsFromPrompt } from '@/data/mockCandidates';
+import { extractKeywordsFromPrompt } from '@/data/mockCandidates';
 import { Candidate, ExtractedKeywords } from '@/types/candidate';
-import { Users, UserCheck, Search } from 'lucide-react';
+import { Users, UserCheck, Search, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { searchCandidates } from '@/lib/coresignal';
 
 const SearchResults = () => {
   const location = useLocation();
@@ -18,28 +19,57 @@ const SearchResults = () => {
   
   const [prompt, setPrompt] = useState(initialPrompt);
   const [keywords, setKeywords] = useState<ExtractedKeywords>(() => extractKeywordsFromPrompt(initialPrompt));
-  const [candidates, setCandidates] = useState<Candidate[]>(mockCandidates);
-  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(mockCandidates[0] || null);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [shortlisted, setShortlisted] = useState<string[]>([]);
   const [rejected, setRejected] = useState<string[]>([]);
   const [sentInvites, setSentInvites] = useState(12);
   const [repliesReceived, setRepliesReceived] = useState(4);
   const [activeTab, setActiveTab] = useState<'all' | 'shortlisted'>('all');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch candidates when keywords change
+  const fetchCandidates = async (searchKeywords: ExtractedKeywords) => {
+    setIsLoading(true);
+    try {
+      const result = await searchCandidates(searchKeywords);
+      setCandidates(result.candidates);
+      if (result.candidates.length > 0) {
+        setSelectedCandidate(result.candidates[0]);
+      } else {
+        setSelectedCandidate(null);
+      }
+    } catch (error) {
+      console.error('Failed to fetch candidates:', error);
+      toast({
+        title: "Search failed",
+        description: error instanceof Error ? error.message : "Failed to search candidates. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!initialPrompt) {
       navigate('/');
+      return;
     }
-  }, [initialPrompt, navigate]);
+    // Initial search
+    fetchCandidates(keywords);
+  }, []);
 
   const handleEditPrompt = (newPrompt: string) => {
     setPrompt(newPrompt);
-    setKeywords(extractKeywordsFromPrompt(newPrompt));
+    const newKeywords = extractKeywordsFromPrompt(newPrompt);
+    setKeywords(newKeywords);
+    fetchCandidates(newKeywords);
   };
 
   const handleUpdateKeywords = (newKeywords: ExtractedKeywords) => {
     setKeywords(newKeywords);
-    // In a real app, this would trigger a new search
+    fetchCandidates(newKeywords);
   };
 
   const handleShortlist = (candidateId: string) => {
@@ -130,7 +160,17 @@ const SearchResults = () => {
 
           {/* Candidate List */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {displayedCandidates.length === 0 ? (
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  Searching candidates...
+                </h3>
+                <p className="text-muted-foreground max-w-sm">
+                  We're searching across active and passive talent using AI.
+                </p>
+              </div>
+            ) : displayedCandidates.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center py-12">
                 <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
                   <Search className="w-8 h-8 text-muted-foreground" />
