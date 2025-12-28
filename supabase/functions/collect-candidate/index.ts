@@ -5,20 +5,23 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Updated interfaces to match actual Coresignal API response structure
 interface CoresignalEducation {
-  title?: string;
-  subtitle?: string;
-  date?: string;
+  degree?: string;
+  institution_name?: string;
+  date_from_year?: number;
+  date_to_year?: number;
   description?: string;
 }
 
 interface CoresignalExperience {
-  title?: string;
+  position_title?: string;  // Correct field name (not "title")
   company_name?: string;
-  date_from?: string;
-  date_to?: string;
-  description?: string;
+  date_from?: string;       // "July 2019" format
+  date_to?: string | null;  // null means current
+  description?: string | null;
   location?: string;
+  duration_months?: number;
 }
 
 interface CoresignalCertification {
@@ -37,108 +40,88 @@ interface CoresignalFullProfile {
   connections_count?: number;
   follower_count?: number;
   summary?: string;
-  member_education?: CoresignalEducation[];
-  member_experience?: CoresignalExperience[];
-  member_skills?: string[];
-  member_certifications?: CoresignalCertification[];
+  // Correct field names from actual API
+  education?: CoresignalEducation[];
+  experience?: CoresignalExperience[];
+  inferred_skills?: string[];
+  certifications?: CoresignalCertification[];
   industry?: string;
-  email?: string;
-  phone?: string;
-  profile_picture?: string;
+  primary_professional_email?: string | null;
+  phone?: string | null;
+  picture_url?: string;
+  total_experience_duration_months?: number;
 }
 
-function calculateExperienceYears(experiences: CoresignalExperience[] | undefined): number {
-  if (!experiences || experiences.length === 0) return 0;
-  
-  let totalMonths = 0;
-  const now = new Date();
-  
-  for (const exp of experiences) {
-    if (!exp.date_from) continue;
-    
-    // Parse dates like "2020-01" or "2020"
-    const fromParts = exp.date_from.split('-');
-    const fromYear = parseInt(fromParts[0]);
-    const fromMonth = parseInt(fromParts[1] || '1');
-    
-    let toYear: number, toMonth: number;
-    if (!exp.date_to || exp.date_to.toLowerCase().includes('present')) {
-      toYear = now.getFullYear();
-      toMonth = now.getMonth() + 1;
-    } else {
-      const toParts = exp.date_to.split('-');
-      toYear = parseInt(toParts[0]);
-      toMonth = parseInt(toParts[1] || '12');
-    }
-    
-    if (!isNaN(fromYear) && !isNaN(toYear)) {
-      const months = (toYear - fromYear) * 12 + (toMonth - fromMonth);
-      if (months > 0) totalMonths += months;
-    }
-  }
-  
-  return Math.round(totalMonths / 12);
-}
-
-function formatDuration(dateFrom: string | undefined, dateTo: string | undefined): string {
+function formatDuration(dateFrom: string | undefined | null, dateTo: string | undefined | null): string {
   if (!dateFrom) return 'Unknown';
   
-  const fromFormatted = dateFrom.substring(0, 7); // "2020-01" format
-  const toFormatted = !dateTo || dateTo.toLowerCase().includes('present') 
-    ? 'Present' 
-    : dateTo.substring(0, 7);
-    
-  return `${fromFormatted} - ${toFormatted}`;
+  const toFormatted = !dateTo ? 'Present' : dateTo;
+  return `${dateFrom} - ${toFormatted}`;
 }
 
 function mapFullProfile(profile: CoresignalFullProfile) {
-  // Map education
-  const education = (profile.member_education || []).map(edu => ({
-    degree: edu.title || 'Degree',
-    institution: edu.subtitle || 'Institution',
-    year: edu.date || '',
+  // Log raw data for debugging
+  console.log('Raw profile data:', {
+    education_count: profile.education?.length ?? 0,
+    experience_count: profile.experience?.length ?? 0,
+    skills_count: profile.inferred_skills?.length ?? 0,
+    certifications_count: profile.certifications?.length ?? 0,
+    has_email: !!profile.primary_professional_email,
+    has_phone: !!profile.phone,
+  });
+
+  // Map education - use correct field names
+  const education = (profile.education || []).map(edu => ({
+    degree: edu.degree || 'Degree',
+    institution: edu.institution_name || 'Institution',
+    year: edu.date_to_year 
+      ? `${edu.date_from_year || ''} - ${edu.date_to_year}` 
+      : String(edu.date_from_year || ''),
   }));
 
-  // Map work history
-  const workHistory = (profile.member_experience || []).map(exp => ({
-    title: exp.title || 'Role',
+  // Map work history - use position_title (not title)
+  const workHistory = (profile.experience || []).map(exp => ({
+    title: exp.position_title || 'Role',
     company: exp.company_name || 'Company',
     duration: formatDuration(exp.date_from, exp.date_to),
     description: exp.description || '',
   }));
 
-  // Extract skills
-  const skills = profile.member_skills || [];
+  // Extract skills - use inferred_skills (not member_skills)
+  const skills = profile.inferred_skills || [];
 
   // Map certifications
-  const certifications = (profile.member_certifications || [])
+  const certifications = (profile.certifications || [])
     .map(cert => cert.name)
     .filter((name): name is string => !!name);
 
-  // Calculate experience years from work history
-  const experienceYears = calculateExperienceYears(profile.member_experience);
+  // Calculate experience years from total_experience_duration_months
+  const experienceYears = profile.total_experience_duration_months 
+    ? Math.round(profile.total_experience_duration_months / 12) 
+    : 0;
 
   return {
     id: String(profile.id),
     name: profile.full_name || 'Unknown',
-    photo: profile.profile_picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.id}`,
+    photo: profile.picture_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.id}`,
     title: profile.headline || 'Professional',
     experience: experienceYears,
     location: profile.location_full || profile.location_country || 'Unknown',
     lastActive: 'Recently',
-    fitScore: 'good' as const, // Will be updated from preview data
+    fitScore: 'good' as const,
     fitReason: 'Full profile loaded',
     education,
     workHistory,
-    skills: skills.slice(0, 20), // Limit to 20 skills
+    skills: skills.slice(0, 20),
     certifications,
     lastUpdated: new Date().toISOString().split('T')[0],
     professionalNetworkUrl: profile.professional_network_url,
     connectionsCount: profile.connections_count,
     companyIndustry: profile.industry,
     contactRevealed: false,
-    email: profile.email,
-    phone: profile.phone,
+    // Only include real email/phone if available
+    email: profile.primary_professional_email || undefined,
+    phone: profile.phone || undefined,
     summary: profile.summary,
   };
 }
