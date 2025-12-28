@@ -75,12 +75,11 @@ function buildCoresignalQuery(keywords: ExtractedKeywords) {
     }
   }
   
-  // Skills/Company context (CBSE, curriculum types) - NESTED query on experience.company_name
-  // Also add location filtering within experience if we have skills that suggest company context
+  // Build nested experience query for skills (CBSE in company_name) and location
+  const experienceNestedMust: unknown[] = [];
+  
+  // Search skills in company_name (e.g., "CBSE" in school names)
   if (keywords.skills.length > 0) {
-    const experienceNestedMust: unknown[] = [];
-    
-    // Search skills in company_name (e.g., "CBSE" in school names)
     experienceNestedMust.push({
       query_string: {
         query: keywords.skills.join(' '),
@@ -88,18 +87,21 @@ function buildCoresignalQuery(keywords: ExtractedKeywords) {
         default_operator: "AND"
       }
     });
-    
-    // If we have location, also search within experience.location
-    if (keywords.location.length > 0) {
-      keywords.location.forEach(loc => {
-        experienceNestedMust.push({
-          match: {
-            "experience.location": loc
-          }
-        });
+  }
+  
+  // Add location filtering within experience.location
+  if (keywords.location.length > 0) {
+    keywords.location.forEach(loc => {
+      experienceNestedMust.push({
+        match: {
+          "experience.location": loc
+        }
       });
-    }
-    
+    });
+  }
+  
+  // Only add the nested query if we have conditions
+  if (experienceNestedMust.length > 0) {
     mustConditions.push({
       nested: {
         path: "experience",
