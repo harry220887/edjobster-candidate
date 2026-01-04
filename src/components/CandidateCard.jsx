@@ -28,6 +28,7 @@ const CandidateCard = ({
         border: 1,
         borderColor: isSelected ? 'primary.main' : 'divider',
         boxShadow: isSelected ? 2 : 1,
+        mb: 1.5,
         '&:hover': {
           borderColor: isSelected ? 'primary.main' : 'rgba(26, 77, 58, 0.3)',
           boxShadow: 2,
