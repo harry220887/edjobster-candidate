@@ -161,11 +161,11 @@ const SearchResults = () => {
       : visibleCandidates;
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ height: '100vh', bgcolor: 'background.default', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <Header sentInvites={sentInvites} repliesReceived={repliesReceived} />
 
-      <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
-        {/* Left Column - Search Context (Fixed) */}
+      <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        {/* Left Column - Search Context (Independent Scroll) */}
         <Box
           component="aside"
           sx={{
@@ -175,10 +175,7 @@ const SearchResults = () => {
             bgcolor: 'background.paper',
             flexShrink: 0,
             display: { xs: 'none', lg: 'block' },
-            position: 'sticky',
-            top: 0,
-            height: '100%',
-            overflow: 'auto',
+            overflowY: 'auto',
           }}
         >
           <SearchContextPanel
@@ -292,7 +289,7 @@ const SearchResults = () => {
           </Box>
         </Box>
 
-        {/* Right Column - Candidate Profile (Fixed) */}
+        {/* Right Column - Candidate Profile (Independent Scroll) */}
         <Box
           component="aside"
           sx={{
@@ -302,10 +299,7 @@ const SearchResults = () => {
             bgcolor: 'background.paper',
             flexShrink: 0,
             display: { xs: 'none', lg: 'block' },
-            position: 'sticky',
-            top: 0,
-            height: '100%',
-            overflow: 'auto',
+            overflowY: 'auto',
           }}
         >
           {isLoadingProfile ? (
