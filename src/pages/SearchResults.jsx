@@ -297,7 +297,7 @@ const SearchResults = () => {
             borderColor: 'divider',
             bgcolor: 'background.paper',
             flexShrink: 0,
-            display: { xs: 'none', xl: 'block' },
+            display: { xs: 'none', lg: 'block' },
           }}
         >
           {isLoadingProfile ? (
