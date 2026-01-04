@@ -6,6 +6,7 @@ import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import GroupIcon from '@mui/icons-material/Group';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import PersonOffIcon from '@mui/icons-material/PersonOff';
 import SearchIcon from '@mui/icons-material/Search';
 import { toast } from 'sonner';
 import Header from '@/components/Header';
@@ -155,9 +156,12 @@ const SearchResults = () => {
   };
 
   const visibleCandidates = candidates.filter((c) => !rejected.includes(c.id));
+  const rejectedCandidates = candidates.filter((c) => rejected.includes(c.id));
   const displayedCandidates =
     activeTab === 'shortlisted'
       ? visibleCandidates.filter((c) => shortlisted.includes(c.id))
+      : activeTab === 'rejected'
+      ? rejectedCandidates
       : visibleCandidates;
 
   return (
@@ -215,6 +219,15 @@ const SearchResults = () => {
               >
                 Shortlisted ({shortlisted.length})
               </Button>
+              <Button
+                onClick={() => setActiveTab('rejected')}
+                variant={activeTab === 'rejected' ? 'contained' : 'text'}
+                startIcon={<PersonOffIcon />}
+                size="small"
+                color={activeTab === 'rejected' ? 'error' : 'inherit'}
+              >
+                Rejected ({rejected.length})
+              </Button>
             </Box>
           </Box>
 
@@ -265,11 +278,13 @@ const SearchResults = () => {
                   <SearchIcon sx={{ fontSize: 32, color: 'text.secondary' }} />
                 </Box>
                 <Typography variant="h6" fontWeight={600} sx={{ mb: 1 }}>
-                  {activeTab === 'shortlisted' ? 'No shortlisted candidates' : 'No candidates found'}
+                  {activeTab === 'shortlisted' ? 'No shortlisted candidates' : activeTab === 'rejected' ? 'No rejected candidates' : 'No candidates found'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 320, textAlign: 'center' }}>
                   {activeTab === 'shortlisted'
                     ? 'Start shortlisting candidates from the results to see them here.'
+                    : activeTab === 'rejected'
+                    ? 'Rejected candidates will appear here.'
                     : 'Try adjusting your search keywords or prompt to find more candidates.'}
                 </Typography>
               </Box>
