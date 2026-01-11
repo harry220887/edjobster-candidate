@@ -13,10 +13,12 @@ import EventIcon from '@mui/icons-material/Event';
 import SendIcon from '@mui/icons-material/Send';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import AIRatingBadge from './AIRatingBadge';
+import ComposeEmailDrawer from './ComposeEmailDrawer';
 import { toast } from 'sonner';
 
 const CandidateProfile = ({ candidate, onSendInvite, onRevealContact }) => {
   const [contactRevealed, setContactRevealed] = useState(candidate.contactRevealed);
+  const [emailDrawerOpen, setEmailDrawerOpen] = useState(false);
 
   const handleRevealContact = () => {
     setContactRevealed(true);
@@ -24,6 +26,10 @@ const CandidateProfile = ({ candidate, onSendInvite, onRevealContact }) => {
   };
 
   const handleSendInvite = () => {
+    setEmailDrawerOpen(true);
+  };
+
+  const handleEmailSend = () => {
     onSendInvite();
     toast.success('Invite Sent', {
       description: `Your invite has been sent to ${candidate.name}.`,
@@ -254,6 +260,14 @@ const CandidateProfile = ({ candidate, onSendInvite, onRevealContact }) => {
           Profile last updated: {candidate.lastUpdated}
         </Typography>
       </Box>
+
+      {/* Compose Email Drawer */}
+      <ComposeEmailDrawer
+        open={emailDrawerOpen}
+        onClose={() => setEmailDrawerOpen(false)}
+        candidate={candidate}
+        onSend={handleEmailSend}
+      />
     </Box>
   );
 };
