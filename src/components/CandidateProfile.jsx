@@ -15,8 +15,10 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import ReplyIcon from '@mui/icons-material/Reply';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
+import HistoryIcon from '@mui/icons-material/History';
 import AIRatingBadge from './AIRatingBadge';
 import ComposeEmailDrawer from './ComposeEmailDrawer';
+import EmailHistoryDrawer from './EmailHistoryDrawer';
 import { toast } from 'sonner';
 
 // Mock email status based on candidate name
@@ -33,6 +35,7 @@ const getEmailStatus = (candidateName) => {
 const CandidateProfile = ({ candidate, onSendInvite, onRevealContact }) => {
   const [contactRevealed, setContactRevealed] = useState(candidate.contactRevealed);
   const [emailDrawerOpen, setEmailDrawerOpen] = useState(false);
+  const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
   
   const emailStatus = getEmailStatus(candidate.name);
   const isFollowUp = emailStatus?.status === 'delivered';
@@ -158,29 +161,45 @@ const CandidateProfile = ({ candidate, onSendInvite, onRevealContact }) => {
 
         {/* Email Status Snippet */}
         {emailStatus && (
-          <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 1, bgcolor: 'rgba(0,0,0,0.02)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {emailStatus.status === 'delivered' ? (
-                <>
-                  <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />
-                  <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 500 }}>
-                    Delivered
-                  </Typography>
-                </>
-              ) : (
-                <>
-                  <ErrorIcon sx={{ fontSize: 16, color: 'error.main' }} />
-                  <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 500 }}>
-                    Failed
-                  </Typography>
-                </>
-              )}
+          <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 1, bgcolor: 'rgba(0,0,0,0.02)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {emailStatus.status === 'delivered' ? (
+                  <>
+                    <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />
+                    <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 500 }}>
+                      Delivered
+                    </Typography>
+                  </>
+                ) : (
+                  <>
+                    <ErrorIcon sx={{ fontSize: 16, color: 'error.main' }} />
+                    <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 500 }}>
+                      Failed
+                    </Typography>
+                  </>
+                )}
+              </Box>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+                {emailStatus.status === 'delivered' 
+                  ? `Sent on ${emailStatus.timestamp}` 
+                  : emailStatus.error}
+              </Typography>
             </Box>
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
-              {emailStatus.status === 'delivered' 
-                ? `Sent on ${emailStatus.timestamp}` 
-                : emailStatus.error}
-            </Typography>
+            <Button
+              size="small"
+              startIcon={<HistoryIcon sx={{ fontSize: 14 }} />}
+              onClick={() => setHistoryDrawerOpen(true)}
+              sx={{ 
+                fontSize: '0.75rem',
+                textTransform: 'none',
+                minWidth: 'auto',
+                px: 1,
+                py: 0.5,
+              }}
+            >
+              Email History
+            </Button>
           </Box>
         )}
       </Box>
@@ -324,6 +343,13 @@ const CandidateProfile = ({ candidate, onSendInvite, onRevealContact }) => {
         candidate={candidate}
         onSend={handleEmailSend}
         isFollowUp={isFollowUp}
+      />
+
+      {/* Email History Drawer */}
+      <EmailHistoryDrawer
+        open={historyDrawerOpen}
+        onClose={() => setHistoryDrawerOpen(false)}
+        candidate={candidate}
       />
     </Box>
   );
