@@ -12,13 +12,30 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import EventIcon from '@mui/icons-material/Event';
 import SendIcon from '@mui/icons-material/Send';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import ReplyIcon from '@mui/icons-material/Reply';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
 import AIRatingBadge from './AIRatingBadge';
 import ComposeEmailDrawer from './ComposeEmailDrawer';
 import { toast } from 'sonner';
 
+// Mock email status based on candidate name
+const getEmailStatus = (candidateName) => {
+  if (candidateName === 'Megha Sethi') {
+    return { status: 'delivered', timestamp: 'Jan 8, 2026 at 2:30 PM' };
+  }
+  if (candidateName === 'Savitha Jp') {
+    return { status: 'failed', error: 'Email bounced - invalid address' };
+  }
+  return null;
+};
+
 const CandidateProfile = ({ candidate, onSendInvite, onRevealContact }) => {
   const [contactRevealed, setContactRevealed] = useState(candidate.contactRevealed);
   const [emailDrawerOpen, setEmailDrawerOpen] = useState(false);
+  
+  const emailStatus = getEmailStatus(candidate.name);
+  const isFollowUp = emailStatus?.status === 'delivered';
 
   const handleRevealContact = () => {
     setContactRevealed(true);
@@ -31,8 +48,8 @@ const CandidateProfile = ({ candidate, onSendInvite, onRevealContact }) => {
 
   const handleEmailSend = () => {
     onSendInvite();
-    toast.success('Invite Sent', {
-      description: `Your invite has been sent to ${candidate.name}.`,
+    toast.success(isFollowUp ? 'Follow-up Sent' : 'Invite Sent', {
+      description: `Your ${isFollowUp ? 'follow-up' : 'invite'} has been sent to ${candidate.name}.`,
     });
   };
 
@@ -69,14 +86,25 @@ const CandidateProfile = ({ candidate, onSendInvite, onRevealContact }) => {
 
         {/* Primary CTAs */}
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            variant="contained"
-            startIcon={<SendIcon />}
-            onClick={handleSendInvite}
-            sx={{ flex: 1 }}
-          >
-            Send Invite
-          </Button>
+          {isFollowUp ? (
+            <Button
+              variant="contained"
+              startIcon={<ReplyIcon />}
+              onClick={handleSendInvite}
+              sx={{ flex: 1 }}
+            >
+              Follow up
+            </Button>
+          ) : (
+            <Button
+              variant="contained"
+              startIcon={<SendIcon />}
+              onClick={handleSendInvite}
+              sx={{ flex: 1 }}
+            >
+              Send Invite
+            </Button>
+          )}
           {!contactRevealed ? (
             <Button
               variant="outlined"
@@ -127,6 +155,34 @@ const CandidateProfile = ({ candidate, onSendInvite, onRevealContact }) => {
             </Box>
           )}
         </Box>
+
+        {/* Email Status Snippet */}
+        {emailStatus && (
+          <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 1, bgcolor: 'rgba(0,0,0,0.02)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {emailStatus.status === 'delivered' ? (
+                <>
+                  <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />
+                  <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 500 }}>
+                    Delivered
+                  </Typography>
+                </>
+              ) : (
+                <>
+                  <ErrorIcon sx={{ fontSize: 16, color: 'error.main' }} />
+                  <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 500 }}>
+                    Failed
+                  </Typography>
+                </>
+              )}
+            </Box>
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+              {emailStatus.status === 'delivered' 
+                ? `Sent on ${emailStatus.timestamp}` 
+                : emailStatus.error}
+            </Typography>
+          </Box>
+        )}
       </Box>
 
       {/* Education */}
@@ -267,6 +323,7 @@ const CandidateProfile = ({ candidate, onSendInvite, onRevealContact }) => {
         onClose={() => setEmailDrawerOpen(false)}
         candidate={candidate}
         onSend={handleEmailSend}
+        isFollowUp={isFollowUp}
       />
     </Box>
   );
