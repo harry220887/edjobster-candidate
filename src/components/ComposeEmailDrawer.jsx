@@ -11,11 +11,25 @@ import SendIcon from '@mui/icons-material/Send';
 import PersonIcon from '@mui/icons-material/Person';
 import EmailIcon from '@mui/icons-material/Email';
 
-const ComposeEmailDrawer = ({ open, onClose, candidate, onSend }) => {
+const ComposeEmailDrawer = ({ open, onClose, candidate, onSend, isFollowUp = false }) => {
   const currentJobTitle = candidate?.workHistory?.[0]?.title || candidate?.title || 'Professional';
   const currentCompany = candidate?.workHistory?.[0]?.company || 'your organization';
 
-  const sampleEmailBody = `Hi ${candidate?.name || 'Candidate'},
+  const initialEmailBody = isFollowUp 
+    ? `Hi ${candidate?.name || 'Candidate'},
+
+I wanted to follow up on my previous message regarding the ${currentJobTitle} opportunity.
+
+I understand you may be busy, but I believe your experience at ${currentCompany} makes you an excellent fit for this role.
+
+Would you have 15 minutes this week for a quick call?
+
+Looking forward to hearing from you.
+
+Best regards,
+[Your Name]
+[Your Company]`
+    : `Hi ${candidate?.name || 'Candidate'},
 
 I came across your profile and was impressed by your experience as a ${currentJobTitle} at ${currentCompany}.
 
@@ -29,8 +43,12 @@ Best regards,
 [Your Name]
 [Your Company]`;
 
-  const [subject, setSubject] = useState(`Exciting Opportunity for ${currentJobTitle} Role`);
-  const [emailBody, setEmailBody] = useState(sampleEmailBody);
+  const initialSubject = isFollowUp 
+    ? `Following up: ${currentJobTitle} Opportunity`
+    : `Exciting Opportunity for ${currentJobTitle} Role`;
+
+  const [subject, setSubject] = useState(initialSubject);
+  const [emailBody, setEmailBody] = useState(initialEmailBody);
 
   const handleSend = () => {
     onSend();
@@ -66,7 +84,7 @@ Best regards,
         borderColor: 'divider'
       }}>
         <Typography variant="h6" fontWeight={600}>
-          Compose Email
+          {isFollowUp ? 'Compose Follow-up' : 'Compose Email'}
         </Typography>
         <IconButton onClick={onClose} size="small">
           <CloseIcon />
@@ -163,7 +181,7 @@ Best regards,
           onClick={handleSend}
           sx={{ flex: 1 }}
         >
-          Send Email
+          {isFollowUp ? 'Send Follow-up' : 'Send Email'}
         </Button>
       </Box>
     </Drawer>
