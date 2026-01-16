@@ -276,14 +276,17 @@ serve(async (req) => {
       }
     );
 
+    const responseText = await response.text();
+    console.log('Raw Coresignal API response:', responseText.substring(0, 2000));
+    
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Coresignal API error:', response.status, errorText);
-      throw new Error(`Coresignal API error: ${response.status} - ${errorText}`);
+      console.error('Coresignal API error:', response.status, responseText);
+      throw new Error(`Coresignal API error: ${response.status} - ${responseText}`);
     }
 
-    const data = await response.json() as CoresignalCandidate[];
+    const data = JSON.parse(responseText) as CoresignalCandidate[];
     console.log(`Received ${data.length} candidates from Coresignal`);
+    console.log('First candidate sample:', JSON.stringify(data[0] || {}).substring(0, 1000));
 
     const candidates = data.map(c => mapToCandidate(c, keywords));
 
