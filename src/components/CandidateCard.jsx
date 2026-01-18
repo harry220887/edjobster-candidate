@@ -81,12 +81,19 @@ const CandidateCard = ({
           <Avatar
             src={candidate.photo}
             alt={candidate.name}
+            imgProps={{
+              crossOrigin: 'anonymous',
+              referrerPolicy: 'no-referrer',
+            }}
             sx={{ 
               width: 48, 
               height: 48, 
               flexShrink: 0,
               bgcolor: 'primary.main',
-              fontSize: '1rem'
+              fontSize: '1rem',
+              '& img': {
+                objectFit: 'cover',
+              }
             }}
           >
             {candidate.name?.charAt(0)}
@@ -207,26 +214,47 @@ const CandidateCard = ({
 
       {/* Details Section - White Background */}
       <CardContent sx={{ pt: 1.5, pb: 1, px: 2 }}>
-        {/* Experience Row */}
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, mb: 0.75 }}>
-          <WorkIcon sx={{ fontSize: 14, color: 'text.secondary', mt: 0.2, flexShrink: 0 }} />
-          <Typography
-            variant="caption"
-            sx={{
-              color: 'text.secondary',
-              fontSize: '0.7rem',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              flex: 1,
-            }}
-          >
-            {experienceStr || `${candidate.title} at ${candidate.workHistory?.[0]?.company || 'Current Company'} (Present)`}
-          </Typography>
-        </Box>
+        {/* Experience Rows - Show multiple experiences (up to 3) */}
+        {(candidate.workHistory && candidate.workHistory.length > 0) ? (
+          candidate.workHistory.slice(0, 3).map((work, index) => (
+            <Box key={index} sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, mb: 0.5 }}>
+              <WorkIcon sx={{ fontSize: 14, color: 'text.secondary', mt: 0.2, flexShrink: 0 }} />
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  fontSize: '0.7rem',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  flex: 1,
+                }}
+              >
+                {work.title} at {work.company} ({work.duration})
+              </Typography>
+            </Box>
+          ))
+        ) : (
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, mb: 0.5 }}>
+            <WorkIcon sx={{ fontSize: 14, color: 'text.secondary', mt: 0.2, flexShrink: 0 }} />
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                fontSize: '0.7rem',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                flex: 1,
+              }}
+            >
+              {candidate.title} at Current Company (Present)
+            </Typography>
+          </Box>
+        )}
 
         {/* Education Row */}
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, mb: 0.75 }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, mb: 0.75, mt: 0.5 }}>
           <SchoolIcon sx={{ fontSize: 14, color: 'text.secondary', mt: 0.2, flexShrink: 0 }} />
           <Typography
             variant="caption"
@@ -239,7 +267,9 @@ const CandidateCard = ({
               flex: 1,
             }}
           >
-            {educationStr || highestEducation || 'Education details available on profile'}
+            {candidate.education?.[0]?.degree && candidate.education[0].institution
+              ? `${candidate.education[0].degree}${candidate.education[0].institution !== 'View full profile for details' ? `, ${candidate.education[0].institution}` : ''}`
+              : highestEducation || 'View profile for education details'}
           </Typography>
         </Box>
 

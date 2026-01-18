@@ -64,9 +64,15 @@ const CandidateProfile = ({ candidate, onSendInvite, onRevealContact }) => {
           <Avatar
             src={candidate.photo}
             alt={candidate.name}
-            sx={{ width: 80, height: 80, borderRadius: 3 }}
+            imgProps={{
+              crossOrigin: 'anonymous',
+              referrerPolicy: 'no-referrer',
+            }}
+            sx={{ width: 80, height: 80, borderRadius: 3, bgcolor: 'primary.main' }}
             variant="rounded"
-          />
+          >
+            {candidate.name?.charAt(0)}
+          </Avatar>
           <Box sx={{ flex: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
               <Typography variant="h6" fontWeight={600}>

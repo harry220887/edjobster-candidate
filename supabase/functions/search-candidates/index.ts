@@ -250,43 +250,68 @@ function mapToCandidate(candidate: CoresignalCandidate, keywords: ExtractedKeywo
     ? candidate.headline.split(/[,|•·]/).map(s => s.trim()).filter(s => s.length > 0 && s.length < 30).slice(0, 6)
     : [];
 
-  // Extract highest education from headline if available
-  const educationKeywords = ['B.Ed', 'M.Ed', 'MA', 'BA', 'PhD', 'M.Phil', 'BBA', 'MBA', 'BSc', 'MSc', 'B.Tech', 'M.Tech'];
-  let highestEducation = '';
-  for (const edu of educationKeywords) {
-    if (candidate.headline?.toLowerCase().includes(edu.toLowerCase())) {
-      highestEducation = edu;
-      break;
-    }
-  }
+  // Expanded degree patterns with full names
+  const degreePatterns = [
+    { short: 'b.ed', full: 'B.Ed (Bachelor of Education)' },
+    { short: 'm.ed', full: 'M.Ed (Master of Education)' },
+    { short: 'b.tech', full: 'B.Tech' },
+    { short: 'm.tech', full: 'M.Tech' },
+    { short: 'mba', full: 'MBA' },
+    { short: 'bba', full: 'BBA' },
+    { short: 'phd', full: 'PhD' },
+    { short: 'm.phil', full: 'M.Phil' },
+    { short: 'ma ', full: 'MA' },
+    { short: 'ba ', full: 'BA' },
+    { short: 'bsc', full: 'B.Sc' },
+    { short: 'msc', full: 'M.Sc' },
+    { short: 'b.sc', full: 'B.Sc' },
+    { short: 'm.sc', full: 'M.Sc' },
+  ];
 
-  // Build education array from headline parsing
+  // Extract highest education from headline if available
+  const headlineLower = (candidate.headline || '').toLowerCase();
+  let highestEducation = '';
   const educationFromHeadline: { degree: string; institution: string; year: string }[] = [];
-  for (const edu of educationKeywords) {
-    if (candidate.headline?.toLowerCase().includes(edu.toLowerCase())) {
+  
+  for (const pattern of degreePatterns) {
+    if (headlineLower.includes(pattern.short)) {
+      highestEducation = pattern.full;
       educationFromHeadline.push({
-        degree: edu,
-        institution: candidate.company_name || 'University',
+        degree: pattern.full,
+        institution: 'View full profile for details',
         year: ''
       });
-      break; // Only take the first match
+      break; // Only take first match for preview
     }
   }
   
   // Ensure we always have at least one education entry
   const education = educationFromHeadline.length > 0 
     ? educationFromHeadline 
-    : highestEducation 
-      ? [{ degree: highestEducation, institution: 'Institution', year: '' }]
-      : [{ degree: 'Degree', institution: 'Institution', year: '' }];
+    : [{ degree: 'Education details in full profile', institution: '', year: '' }];
 
-  // Always populate workHistory with current role
-  const workHistory = [{
-    title: candidate.active_experience_title || 'Current Role',
-    company: candidate.company_name || 'Company',
-    duration: 'Present',
-    description: candidate.company_industry || ''
-  }];
+  // Build work history - current role is always first
+  const workHistory: { title: string; company: string; duration: string; description: string }[] = [];
+  
+  // Add current/active role
+  if (candidate.active_experience_title || candidate.company_name) {
+    workHistory.push({
+      title: candidate.active_experience_title || 'Current Role',
+      company: candidate.company_name || 'Company',
+      duration: 'Present',
+      description: candidate.company_industry || ''
+    });
+  }
+  
+  // If we still have no work history, add a placeholder
+  if (workHistory.length === 0) {
+    workHistory.push({
+      title: candidate.headline?.split('|')[0]?.trim() || 'Professional',
+      company: 'Company',
+      duration: 'Present',
+      description: ''
+    });
+  }
 
   // Generate matching attributes
   const matchingAttributes = generateMatchingAttributes(candidate, keywords);
@@ -294,7 +319,7 @@ function mapToCandidate(candidate: CoresignalCandidate, keywords: ExtractedKeywo
   return {
     id: String(candidate.id),
     name: candidate.full_name || 'Unknown',
-    photo: `https://api.dicebear.com/7.x/avataaars/svg?seed=${candidate.id}`,
+    photo: `https://ui-avatars.com/api/?name=${encodeURIComponent(candidate.full_name || 'Unknown')}&background=1A4D3A&color=fff&size=128`,
     title: candidate.active_experience_title || candidate.headline || 'Professional',
     experience: Math.floor(Math.random() * 10) + 2, // Preview API doesn't provide this, estimate
     location: candidate.location_full || candidate.location_country || 'Unknown',
