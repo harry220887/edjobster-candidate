@@ -207,6 +207,41 @@ function generateFitReason(candidate: CoresignalCandidate, keywords: ExtractedKe
   return matchText + gapText;
 }
 
+function generateMatchingAttributes(candidate: CoresignalCandidate, keywords: ExtractedKeywords): string[] {
+  const attributes: string[] = [];
+
+  // Check title/role match
+  if (keywords.jobTitles.some(title => 
+    candidate.active_experience_title?.toLowerCase().includes(title.toLowerCase())
+  )) {
+    attributes.push('Primary Role');
+  }
+
+  // Check location match
+  if (keywords.location.some(loc => 
+    candidate.location_full?.toLowerCase().includes(loc.toLowerCase())
+  )) {
+    attributes.push('Location Match');
+  }
+
+  // Check specific skills
+  keywords.skills.forEach(skill => {
+    if (candidate.headline?.toLowerCase().includes(skill.toLowerCase()) ||
+        candidate.company_name?.toLowerCase().includes(skill.toLowerCase())) {
+      attributes.push(skill);
+    }
+  });
+
+  // Check education
+  keywords.education.forEach(edu => {
+    if (candidate.headline?.toLowerCase().includes(edu.toLowerCase())) {
+      attributes.push(`${edu} Qualified`);
+    }
+  });
+
+  return attributes.slice(0, 4); // Limit to 4 attributes
+}
+
 function mapToCandidate(candidate: CoresignalCandidate, keywords: ExtractedKeywords) {
   const fitScore = calculateFitScore(candidate._score);
   
@@ -214,6 +249,19 @@ function mapToCandidate(candidate: CoresignalCandidate, keywords: ExtractedKeywo
   const skills = candidate.headline
     ? candidate.headline.split(/[,|•·]/).map(s => s.trim()).filter(s => s.length > 0 && s.length < 30).slice(0, 6)
     : [];
+
+  // Extract highest education from headline if available
+  const educationKeywords = ['B.Ed', 'M.Ed', 'MA', 'BA', 'PhD', 'M.Phil', 'BBA', 'MBA'];
+  let highestEducation = '';
+  for (const edu of educationKeywords) {
+    if (candidate.headline?.includes(edu)) {
+      highestEducation = edu;
+      break;
+    }
+  }
+
+  // Generate matching attributes
+  const matchingAttributes = generateMatchingAttributes(candidate, keywords);
 
   return {
     id: String(candidate.id),
@@ -236,9 +284,15 @@ function mapToCandidate(candidate: CoresignalCandidate, keywords: ExtractedKeywo
     certifications: [],
     lastUpdated: new Date().toISOString().split('T')[0],
     professionalNetworkUrl: candidate.professional_network_url,
+    linkedinUrl: candidate.professional_network_url,
     connectionsCount: candidate.connections_count,
     companyIndustry: candidate.company_industry,
-    contactRevealed: false
+    contactRevealed: false,
+    isViewed: false,
+    highestEducation,
+    resumeUrl: null, // Not available from API
+    noticePeriod: null, // Not available from API
+    matchingAttributes
   };
 }
 
