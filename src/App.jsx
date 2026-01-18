@@ -6,6 +6,7 @@ import { Toaster } from 'sonner';
 import theme from './theme';
 import Index from './pages/Index';
 import SearchResults from './pages/SearchResults';
+import ViewedProfiles from './pages/ViewedProfiles';
 import NotFound from './pages/NotFound';
 
 const queryClient = new QueryClient();
@@ -19,6 +20,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/search" element={<SearchResults />} />
+          <Route path="/viewed-profiles" element={<ViewedProfiles />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

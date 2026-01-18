@@ -39,6 +39,12 @@
  * @property {string} [professionalNetworkUrl]
  * @property {number} [connectionsCount]
  * @property {string} [companyIndustry]
+ * @property {string} [linkedinUrl]
+ * @property {string} [resumeUrl]
+ * @property {boolean} [isViewed]
+ * @property {string} [highestEducation]
+ * @property {string} [noticePeriod]
+ * @property {string[]} [matchingAttributes]
  */
 
 /**

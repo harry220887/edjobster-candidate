@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Avatar from '@mui/material/Avatar';
 import IconButton from '@mui/material/IconButton';
@@ -11,11 +12,13 @@ import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import PersonIcon from '@mui/icons-material/Person';
 import GroupIcon from '@mui/icons-material/Group';
 import LogoutIcon from '@mui/icons-material/Logout';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import Logo from './Logo';
 
 const Header = ({ sentInvites, repliesReceived }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
+  const navigate = useNavigate();
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -23,6 +26,11 @@ const Header = ({ sentInvites, repliesReceived }) => {
 
   const handleClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleViewedProfiles = () => {
+    handleClose();
+    navigate('/viewed-profiles');
   };
 
   return (
@@ -122,6 +130,10 @@ const Header = ({ sentInvites, repliesReceived }) => {
             transformOrigin={{ vertical: 'top', horizontal: 'right' }}
             PaperProps={{ sx: { width: 192, mt: 1 } }}
           >
+            <MenuItem onClick={handleViewedProfiles}>
+              <VisibilityIcon sx={{ fontSize: 18, mr: 1.5, color: 'text.secondary' }} />
+              Viewed Profiles
+            </MenuItem>
             <MenuItem onClick={handleClose}>
               <PersonIcon sx={{ fontSize: 18, mr: 1.5, color: 'text.secondary' }} />
               Edit Profile
