@@ -81,80 +81,95 @@ const CandidateCard = ({
           <Avatar
             src={candidate.photo}
             alt={candidate.name}
-            sx={{ width: 48, height: 48, flexShrink: 0 }}
-          />
+            sx={{ 
+              width: 48, 
+              height: 48, 
+              flexShrink: 0,
+              bgcolor: 'primary.main',
+              fontSize: '1rem'
+            }}
+          >
+            {candidate.name?.charAt(0)}
+          </Avatar>
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            {/* Name row with right-side icons */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
-              <Typography
-                variant="subtitle1"
-                fontWeight={600}
-                noWrap
-                sx={{ color: 'text.primary', mr: 'auto' }}
-              >
-                {candidate.name}
-              </Typography>
-              
-              {/* LinkedIn Icon */}
-              {(candidate.linkedinUrl || candidate.professionalNetworkUrl) && (
-                <Tooltip title="View LinkedIn Profile">
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      window.open(candidate.linkedinUrl || candidate.professionalNetworkUrl, '_blank');
-                    }}
-                    sx={{ p: 0.5, color: '#0077B5' }}
-                  >
-                    <LinkedInIcon sx={{ fontSize: 18 }} />
-                  </IconButton>
-                </Tooltip>
-              )}
-
-              {/* Resume Tag */}
-              {candidate.resumeUrl && (
+            {/* Name row with icons */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              {/* Left group: Name + Years exp */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1, minWidth: 0 }}>
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={600}
+                  noWrap
+                  sx={{ color: 'text.primary' }}
+                >
+                  {candidate.name}
+                </Typography>
+                
+                {/* Years of Experience Tag - immediately after name */}
                 <Chip
-                  label="Resume"
+                  label={`${candidate.experience} yrs exp`}
                   size="small"
-                  icon={<DescriptionIcon sx={{ fontSize: 14 }} />}
-                  deleteIcon={<OpenInNewIcon sx={{ fontSize: 12 }} />}
-                  onDelete={(e) => {
-                    e.stopPropagation();
-                    window.open(candidate.resumeUrl, '_blank');
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    window.open(candidate.resumeUrl, '_blank');
-                  }}
                   sx={{
-                    height: 22,
-                    fontSize: '0.7rem',
-                    bgcolor: 'rgba(26, 77, 58, 0.1)',
-                    color: 'primary.main',
-                    '& .MuiChip-icon': { color: 'primary.main' },
-                    '& .MuiChip-deleteIcon': { color: 'primary.main', fontSize: 12 },
+                    height: 20,
+                    fontSize: '0.65rem',
+                    bgcolor: 'rgba(0, 0, 0, 0.06)',
+                    color: 'text.secondary',
+                    flexShrink: 0,
                   }}
                 />
-              )}
+              </Box>
 
-              {/* Years of Experience Tag */}
-              <Chip
-                label={`${candidate.experience} yrs exp`}
-                size="small"
-                sx={{
-                  height: 22,
-                  fontSize: '0.7rem',
-                  bgcolor: 'rgba(0, 0, 0, 0.06)',
-                  color: 'text.secondary',
-                }}
-              />
+              {/* Right group: LinkedIn, Resume, Viewed */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                {/* LinkedIn Icon */}
+                {(candidate.linkedinUrl || candidate.professionalNetworkUrl) && (
+                  <Tooltip title="View LinkedIn Profile">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.open(candidate.linkedinUrl || candidate.professionalNetworkUrl, '_blank');
+                      }}
+                      sx={{ p: 0.5, color: '#0077B5' }}
+                    >
+                      <LinkedInIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                )}
 
-              {/* Viewed Icon */}
-              {candidate.isViewed && (
-                <Tooltip title="Profile viewed, this profile is available in viewed profiles to check later.">
-                  <VisibilityIcon sx={{ fontSize: 16, color: 'text.secondary', ml: 0.5 }} />
-                </Tooltip>
-              )}
+                {/* Resume Tag */}
+                {candidate.resumeUrl && (
+                  <Chip
+                    label="Resume"
+                    size="small"
+                    icon={<DescriptionIcon sx={{ fontSize: 14 }} />}
+                    deleteIcon={<OpenInNewIcon sx={{ fontSize: 12 }} />}
+                    onDelete={(e) => {
+                      e.stopPropagation();
+                      window.open(candidate.resumeUrl, '_blank');
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(candidate.resumeUrl, '_blank');
+                    }}
+                    sx={{
+                      height: 22,
+                      fontSize: '0.7rem',
+                      bgcolor: 'rgba(26, 77, 58, 0.1)',
+                      color: 'primary.main',
+                      '& .MuiChip-icon': { color: 'primary.main' },
+                      '& .MuiChip-deleteIcon': { color: 'primary.main', fontSize: 12 },
+                    }}
+                  />
+                )}
+
+                {/* Viewed Icon */}
+                {candidate.isViewed && (
+                  <Tooltip title="Profile viewed, this profile is available in viewed profiles to check later.">
+                    <VisibilityIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                  </Tooltip>
+                )}
+              </Box>
             </Box>
 
             {/* Row 2: One-liner summary */}
@@ -193,42 +208,40 @@ const CandidateCard = ({
       {/* Details Section - White Background */}
       <CardContent sx={{ pt: 1.5, pb: 1, px: 2 }}>
         {/* Experience Row */}
-        {experienceStr && (
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, mb: 0.75 }}>
-            <WorkIcon sx={{ fontSize: 14, color: 'text.secondary', mt: 0.2, flexShrink: 0 }} />
-            <Typography
-              variant="caption"
-              sx={{
-                color: 'text.secondary',
-                fontSize: '0.7rem',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {experienceStr}
-            </Typography>
-          </Box>
-        )}
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, mb: 0.75 }}>
+          <WorkIcon sx={{ fontSize: 14, color: 'text.secondary', mt: 0.2, flexShrink: 0 }} />
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.secondary',
+              fontSize: '0.7rem',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              flex: 1,
+            }}
+          >
+            {experienceStr || `${candidate.title} at ${candidate.workHistory?.[0]?.company || 'Current Company'} (Present)`}
+          </Typography>
+        </Box>
 
         {/* Education Row */}
-        {educationStr && (
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, mb: 0.75 }}>
-            <SchoolIcon sx={{ fontSize: 14, color: 'text.secondary', mt: 0.2, flexShrink: 0 }} />
-            <Typography
-              variant="caption"
-              sx={{
-                color: 'text.secondary',
-                fontSize: '0.7rem',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {educationStr}
-            </Typography>
-          </Box>
-        )}
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, mb: 0.75 }}>
+          <SchoolIcon sx={{ fontSize: 14, color: 'text.secondary', mt: 0.2, flexShrink: 0 }} />
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.secondary',
+              fontSize: '0.7rem',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              flex: 1,
+            }}
+          >
+            {educationStr || highestEducation || 'Education details available on profile'}
+          </Typography>
+        </Box>
 
         {/* Notice Period Row (if available) */}
         {candidate.noticePeriod && (

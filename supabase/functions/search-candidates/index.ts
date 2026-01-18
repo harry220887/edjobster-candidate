@@ -251,14 +251,42 @@ function mapToCandidate(candidate: CoresignalCandidate, keywords: ExtractedKeywo
     : [];
 
   // Extract highest education from headline if available
-  const educationKeywords = ['B.Ed', 'M.Ed', 'MA', 'BA', 'PhD', 'M.Phil', 'BBA', 'MBA'];
+  const educationKeywords = ['B.Ed', 'M.Ed', 'MA', 'BA', 'PhD', 'M.Phil', 'BBA', 'MBA', 'BSc', 'MSc', 'B.Tech', 'M.Tech'];
   let highestEducation = '';
   for (const edu of educationKeywords) {
-    if (candidate.headline?.includes(edu)) {
+    if (candidate.headline?.toLowerCase().includes(edu.toLowerCase())) {
       highestEducation = edu;
       break;
     }
   }
+
+  // Build education array from headline parsing
+  const educationFromHeadline: { degree: string; institution: string; year: string }[] = [];
+  for (const edu of educationKeywords) {
+    if (candidate.headline?.toLowerCase().includes(edu.toLowerCase())) {
+      educationFromHeadline.push({
+        degree: edu,
+        institution: candidate.company_name || 'University',
+        year: ''
+      });
+      break; // Only take the first match
+    }
+  }
+  
+  // Ensure we always have at least one education entry
+  const education = educationFromHeadline.length > 0 
+    ? educationFromHeadline 
+    : highestEducation 
+      ? [{ degree: highestEducation, institution: 'Institution', year: '' }]
+      : [{ degree: 'Degree', institution: 'Institution', year: '' }];
+
+  // Always populate workHistory with current role
+  const workHistory = [{
+    title: candidate.active_experience_title || 'Current Role',
+    company: candidate.company_name || 'Company',
+    duration: 'Present',
+    description: candidate.company_industry || ''
+  }];
 
   // Generate matching attributes
   const matchingAttributes = generateMatchingAttributes(candidate, keywords);
@@ -273,13 +301,8 @@ function mapToCandidate(candidate: CoresignalCandidate, keywords: ExtractedKeywo
     lastActive: 'Recently',
     fitScore,
     fitReason: generateFitReason(candidate, keywords),
-    education: [], // Preview API doesn't provide detailed education
-    workHistory: candidate.company_name ? [{
-      title: candidate.active_experience_title || 'Current Role',
-      company: candidate.company_name,
-      duration: 'Present',
-      description: candidate.company_industry || ''
-    }] : [],
+    education,
+    workHistory,
     skills,
     certifications: [],
     lastUpdated: new Date().toISOString().split('T')[0],
