@@ -16,14 +16,14 @@ interface ExtractedKeywords {
 interface CoresignalCandidate {
   id: number;
   full_name: string;
-  professional_network_url: string;
+  linkedin_url: string;
   headline: string;
   location_full: string;
   location_country: string;
   connections_count: number;
   followers_count: number;
   company_name: string;
-  company_professional_network_url: string;
+  company_linkedin_url: string;
   company_website: string;
   company_industry: string;
   active_experience_title: string;
@@ -331,8 +331,8 @@ function mapToCandidate(candidate: CoresignalCandidate, keywords: ExtractedKeywo
     skills,
     certifications: [],
     lastUpdated: new Date().toISOString().split('T')[0],
-    professionalNetworkUrl: candidate.professional_network_url,
-    linkedinUrl: candidate.professional_network_url,
+    professionalNetworkUrl: candidate.linkedin_url,
+    linkedinUrl: candidate.linkedin_url,
     connectionsCount: candidate.connections_count,
     companyIndustry: candidate.company_industry,
     contactRevealed: false,
